@@ -1,17 +1,30 @@
-name: Kollekvium
-
+name: Custom-Web-Automation # Pipeline-ın adı dəyişdi
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
+
+env:
+  # Burada yeni adları GitHub Secrets-dən çəkirik
+  VERCEL_ORG_ID: ${{ secrets.USER_ACCOUNT_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.APP_IDENTITY_ID }}
 
 jobs:
-  check-files:
+  Launch-Project: # Job adı dəyişdi
+    name: Build and Release
     runs-on: ubuntu-latest
     steps:
-      - name: Kodu GitHub-dan gotur
+      - name: 📁 Getting Files
         uses: actions/checkout@v4
 
-      - name: Fayllari siyahiya sal
-        run: |
-          echo "Pipeline isleyir. Fayllar yoxlanilir..."
-          ls –R
+      - name: ⚙️ Setup Vercel Tools
+        run: npm install --global vercel@latest
+
+      - name: 📡 Syncing with Server
+        # Burada həm də VERCEL_TOKEN-in yeni adını yazırıq
+        run: vercel pull --yes --environment=production --token=${{ secrets.MY_DEPLOY_KEY }}
+
+      - name: 🏗️ Compiling Project
+        run: vercel build --prod --token=${{ secrets.MY_DEPLOY_KEY }}
+
+      - name: 🚀 Go Live
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.MY_DEPLOY_KEY }}

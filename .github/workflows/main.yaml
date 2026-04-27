@@ -1,30 +1,49 @@
-name: Custom-Web-Automation # Pipeline-ın adı dəyişdi
+name: Mathematics-Analysis-V1-CI-CD
+
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "feature/*" ] # Həm əsas, həm də feature budaqlarını izləyir
+  pull_request:
+    branches: [ "main" ] # Birləşməzdən əvvəl testləri qaçırır
 
 env:
-  # Burada yeni adları GitHub Secrets-dən çəkirik
   VERCEL_ORG_ID: ${{ secrets.USER_ACCOUNT_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.APP_IDENTITY_ID }}
+  VERCEL_TOKEN: ${{ secrets.MY_DEPLOY_KEY }}
 
 jobs:
-  Launch-Project: # Job adı dəyişdi
-    name: Build and Release
+  # 1-ci MƏRHƏLƏ: Keyfiyyət Yoxlanışı (Quality Gate)
+  Validation:
+    name: 🧪 Syntax and Structure Test
     runs-on: ubuntu-latest
     steps:
-      - name: 📁 Getting Files
+      - name: 📦 Kodu Götür
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup Vercel Tools
+      - name: 🛠️ Fayl Strukturunu Yoxla
+        run: |
+          echo "Layihə strukturu analiz edilir..."
+          [ -f "index.html" ] || exit 1
+          echo "Bütün tələb olunan fayllar mövcuddur."
+
+  # 2-ci MƏRHƏLƏ: Canlıya Çıxış (Deployment)
+  Deploy:
+    name: 🚀 Production Release
+    needs: Validation # Əgər Test mərhələsi keçməsə, bura başlamayacaq!
+    if: github.ref == 'refs/heads/main' # Yalnız main budağı üçün canlıya çıxar
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📦 Kodu Götür
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Vercel Mühitini Quraşdır
         run: npm install --global vercel@latest
 
-      - name: 📡 Syncing with Server
-        # Burada həm də VERCEL_TOKEN-in yeni adını yazırıq
-        run: vercel pull --yes --environment=production --token=${{ secrets.MY_DEPLOY_KEY }}
+      - name: 📡 Server ilə Sinxronizasiya
+        run: vercel pull --yes --environment=production --token=${{ env.VERCEL_TOKEN }}
 
-      - name: 🏗️ Compiling Project
-        run: vercel build --prod --token=${{ secrets.MY_DEPLOY_KEY }}
+      - name: 🏗️ Layihəni Build Et (Optimallaşdırma)
+        run: vercel build --prod --token=${{ env.VERCEL_TOKEN }}
 
-      - name: 🚀 Go Live
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.MY_DEPLOY_KEY }}
+      - name: 🌍 Canlıya Çıxar (Deployment)
+        run: vercel deploy --prebuilt --prod --token=${{ env.VERCEL_TOKEN }}
